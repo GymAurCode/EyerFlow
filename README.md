@@ -1,3 +1,4 @@
+
 # Minha Inventory
 
 Offline inventory, finance and service management for water purification
@@ -254,3 +255,4 @@ architecture would be required to change this.
 ## Licence
 
 Proprietary. All rights reserved.
+
