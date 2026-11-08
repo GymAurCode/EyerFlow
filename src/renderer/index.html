@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Strict CSP. No remote origins are permitted at all: this app is fully
+      offline, so any attempt to load a remote script is a bug or an attack.
+      'unsafe-inline' for styles only, since Tailwind injects a stylesheet and
+      inline style attributes carry the meter widths and chart geometry.
+      'frame-ancestors' is deliberately absent: browsers ignore that directive
+      in a <meta> tag (and log a warning for it), so it is only enforced from
+      the response header in src/main/window.ts.
+      `vite dev` swaps in a relaxed policy that permits the HMR socket; this
+      strict policy is what ships.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <!--
+      Render blocking, so the `dark` class lands on <html> before the first
+      paint and a dark-mode launch never flashes light. Kept as an external
+      file so `script-src` needs no 'unsafe-inline'; see theme-boot.js.
+    -->
+    <script src="./theme-boot.js"></script>
+    <title>EyerStock</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "dataDir": "C:\\coding\\Eyerflow-1\\.tmp\\wms-demo",
+  "database": "C:\\coding\\Eyerflow-1\\.tmp\\wms-demo\\eyerstock.db",
+  "company": "EyerFlow Warehouse Demo",
+  "warehouses": 1,
+  "bins": 16,
+  "products": 10,
+  "inbounds": 2,
+  "tasks": 13,
+  "dispatches": 2,
+  "cartons": 3,
+  "counts": 1,
+  "returns": 1,
+  "reconciliationExceptions": 0,
+  "totalWarehouseQuantityMilli": 975000
+}

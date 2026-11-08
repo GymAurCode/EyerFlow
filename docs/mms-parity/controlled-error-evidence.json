@@ -1,0 +1,10 @@
+{
+  "requestId": "f1593075-13ab-48a2-aa38-e3a32f9e4db5",
+  "renderer": [
+    "Renderer RPC failed {page: #/mms, method: mms.dashboard, code: DATABASE_QUERY_FAILED, requestId: f1593075-13ab-48a2-aa38-e3a32f9e4db5, message: The requested data could not be read. Please retry or contact support.} ApiException: The requested data could not be read. Please retry or contact support.\n    at call (http://localhost:5273/lib/api.ts:63:17)",
+    "MmsDashboardPage: mms.dashboard failed {page: MmsDashboardPage, method: mms.dashboard, requestId: f1593075-13ab-48a2-aa38-e3a32f9e4db5, message: The requested data could not be read. Please retry or contact support., stack: ApiException: The requested data could not be read… at call (http://localhost:5273/lib/api.ts:63:17)} ApiException: The requested data could not be read. Please retry or contact support.\n    at call (http://localhost:5273/lib/api.ts:63:17)"
+  ],
+  "main": [
+    "2026-11-07 19:40:37.600 [ERROR] RPC operation failed {\"requestId\":\"f1593075-13ab-48a2-aa38-e3a32f9e4db5\",\"operation\":\"mms.dashboard\",\"errorName\":\"SqliteError\",\"code\":\"SQLITE_ERROR\",\"message\":\"no such table: manufacturing_cost_records\",\"stack\":\"SqliteError: no such table: manufacturing_cost_records\\n    at Database.prepare (C:\\\\coding\\\\Eyerflow-1\\\\node_modules\\\\better-sqlite3-multiple-ciphers\\\\lib\\\\methods\\\\wrappers.js:5:21)\\n    at rowsOf (C:\\\\coding\\\\Eyerflow-1\\\\dist\\\\main\\\\repositories\\\\mms\\\\analytics.js:19:15)\\n    at Object.mmsDashboard (C:\\\\coding\\\\Eyerflow-1\\\\dist\\\\main\\\\repositories\\\\mms\\\\analytics.js:76:29)\\n    at Object.handler (C:\\\\coding\\\\Eyerflow-1\\\\dist\\\\main\\\\rpc.js:1960:54)\\n    at dispatchRpc (C:\\\\coding\\\\Eyerflow-1\\\\dist\\\\main\\\\rpc.js:2049:41)\\n    at C:\\\\coding\\\\Eyerflow-1\\\\dist\\\\main\\\\ipc.js:448:38\\n    at C:\\\\coding\\\\Eyerflow-1\\\\dist\\\\main\\\\ipc.js:117:40\\n    at Session.<anonymous> (node:electron/js2c/browser_init:2:107303)\\n    at Session.emit (node:events:519:28)\"}"
+  ]
+}

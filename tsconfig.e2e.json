@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "Playwright specs. They are not app code and are deliberately kept out of tsconfig.node.json, but they are still type-checked and linted. `DOM` is in lib because `page.evaluate` callbacks are serialised into the renderer and legitimately reference `window`, which the Node project has no business exposing.",
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["e2e/**/*.ts", "scripts/seed-wms-demo.ts"]
+}

@@ -1,0 +1,22 @@
+2026-11-07T14:00:05.891Z no such table: audit_log
+SqliteError: no such table: audit_log
+    at Database.prepare (C:\coding\Eyerflow-1\node_modules\better-sqlite3-multiple-ciphers\lib\methods\wrappers.js:5:21)
+    at rowsOf (C:\coding\Eyerflow-1\dist\main\repositories\mms\analytics.js:19:15)
+    at Object.mmsDashboard (C:\coding\Eyerflow-1\dist\main\repositories\mms\analytics.js:178:28)
+    at Object.handler (C:\coding\Eyerflow-1\dist\main\rpc.js:1960:54)
+    at dispatchRpc (C:\coding\Eyerflow-1\dist\main\rpc.js:2048:41)
+    at C:\coding\Eyerflow-1\dist\main\ipc.js:439:38
+    at C:\coding\Eyerflow-1\dist\main\ipc.js:109:40
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:107303)
+    at Session.emit (node:events:519:28)
+2026-11-07T14:00:08.416Z no such table: audit_log
+SqliteError: no such table: audit_log
+    at Database.prepare (C:\coding\Eyerflow-1\node_modules\better-sqlite3-multiple-ciphers\lib\methods\wrappers.js:5:21)
+    at rowsOf (C:\coding\Eyerflow-1\dist\main\repositories\mms\analytics.js:19:15)
+    at Object.mmsDashboard (C:\coding\Eyerflow-1\dist\main\repositories\mms\analytics.js:178:28)
+    at Object.handler (C:\coding\Eyerflow-1\dist\main\rpc.js:1960:54)
+    at dispatchRpc (C:\coding\Eyerflow-1\dist\main\rpc.js:2048:41)
+    at C:\coding\Eyerflow-1\dist\main\ipc.js:439:38
+    at C:\coding\Eyerflow-1\dist\main\ipc.js:109:40
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:107303)
+    at Session.emit (node:events:519:28)

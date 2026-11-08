@@ -1,0 +1,2116 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * EyerStock design tokens - Minimal 3D Liquid Glass.
+ *
+ * One source of truth for colour. The semantic names (--bg, --surface, --text,
+ * --brand, ...) are what components and the Tailwind theme consume. The legacy
+ * names further down are kept as aliases of those, so nothing hardcodes a hex
+ * and a theme switch is a single class change on <html> with no component edits.
+ *
+ * The material is glass, and glass reads as glass because of *layers*, not
+ * because of colour. Every surface here is built the same way:
+ *
+ *   fill      a white slab (light) or a lighter teal slab (dark), translucent
+ *   sheen     a 1px inner highlight along the top edge - the light catching it
+ *   rim       a 1px hairline border in the *opposite* value to the fill, so a
+ *             white panel still has an outline on a white page
+ *   inner     a faint shading along the bottom edge, so the panel looks like a
+ *             solid object with thickness rather than a tinted rectangle
+ *   cast      a soft, low-opacity, multi-layer drop shadow with a wide, very
+ *             faint second layer that separates the panel from the page
+ *
+ * There are four elevation levels and nothing else: --elevation-1 for controls
+ * and chips, --elevation-2 for rows and wells, --elevation-3 for panels in the
+ * page, --elevation-4 for things that genuinely float (the rail, the top bar
+ * menus, dialogs). Every panel in the app picks one of the four, which is why
+ * a form on the products page and a card on the dashboard belong to the same
+ * object.
+ *
+ * Restraint is part of the system, not a per-screen decision:
+ *
+ *   - the page is one flat value: white in the light palette, a deep teal in
+ *     the dark one. In the dark palette the working column and the rail share
+ *     that same value, so the whole frame reads as one surface and depth comes
+ *     from the rim, the shadow and the highlight rather than from hue;
+ *   - colour is functional. Teal is navigation and action, green is healthy,
+ *     amber is low, red is critical. A panel is never filled with one;
+ *   - blur is paid for only where something is genuinely behind the surface.
+ *     Panels in the page layout are translucent over a smooth field, so a
+ *     backdrop readback per card would cost a scroll frame per card and change
+ *     no pixels.
+ *
+ * Light and dark are both first-class and follow the same construction: the
+ * difference is the base value and the strength of each layer, never the number
+ * of layers. Every text pair clears WCAG AA (4.5:1 body, 3:1 large/UI) against
+ * its own surface once the translucency is composited over the page.
+ *
+ * On top of the two modes sits a set of fifteen colour packs (Midnight Navy,
+ * Obsidian Black, Ocean Teal, ...). A pack is a scoped override of the identity
+ * layer - page, panels, ink, action colour, rail and accent family - keyed by
+ * `data-palette` on top of the resolved `data-theme`. The supporting tokens are
+ * derived once from those seeds further down, so a pack cannot ship a hover
+ * tint that disagrees with its own ink. Ocean Teal is the built-in default and
+ * keeps the literal values this file was originally tuned with.
+ *
+ * Contrast is not a matter of taste here: every pack was checked against the
+ * surfaces it is used on (body text, secondary text, muted text, the action
+ * colour and its foreground, the rail and its active pill, and each accent)
+ * before it was added.
+ */
+@layer base {
+  :root {
+    color-scheme: light;
+
+    /* ---- page ---- */
+    /* The page is one flat value: pure white here, pure black in the dark
+       palette. The working surface is its own token because the rail floats in
+       the gutter around it, so "the page behind the glass" and "the main column"
+       are not always the same colour. */
+    --bg: #ffffff;
+    --main-bg: #ffffff;
+
+    /* ---- glass surfaces ---- */
+    /* Cards are white on a white page; the rim, the sheen and the cast shadow
+       are what separate them from it. Off-white is kept for wells and hovers. */
+    --surface: #ffffff;
+    --surface-2: rgba(31, 41, 55, 0.035);
+    --surface-3: rgba(31, 41, 55, 0.06);
+    --surface-float: #ffffff;
+    /* The header is the one surface that must stay genuinely see-through: it
+       sits over content that is still moving, and a bar that hides what passes
+       under it stops reading as glass. Lower alpha than --surface-float, with
+       the blur doing the work of hiding the noise. */
+    --surface-header: rgba(255, 255, 255, 0.82);
+    --glass-fill-header: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 255, 255, 0.72) 100%
+    );
+    --glass-fill: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0.97) 46%,
+      rgba(249, 250, 251, 0.94) 100%
+    );
+    /* A raised panel catches light, so its rim is a soft neutral rather than a
+       cool hairline. The specular line along the top edge carries the glass. */
+    --glass-border: #e5e7eb;
+    --glass-edge-top: #ffffff;
+    --glass-edge-bottom: rgba(31, 41, 55, 0.05);
+    --glass-inner-glow: rgba(31, 41, 55, 0.04);
+    --glass-blur: 18px;
+    --glass-blur-strong: 26px;
+
+    /* ---- elevation: four levels, no more ---- */
+    --elevation-1: 0 1px 2px rgba(17, 24, 39, 0.05), 0 3px 8px -6px rgba(17, 24, 39, 0.12);
+    --elevation-2: 0 1px 1px rgba(17, 24, 39, 0.04), 0 7px 16px -12px rgba(17, 24, 39, 0.14);
+    --elevation-3:
+      0 1px 1px rgba(17, 24, 39, 0.04), 0 10px 24px -16px rgba(17, 24, 39, 0.16),
+      0 28px 52px -32px rgba(17, 24, 39, 0.2);
+    --elevation-4: 0 2px 6px -2px rgba(17, 24, 39, 0.1), 0 18px 40px -22px rgba(17, 24, 39, 0.2);
+    --shadow-glass: var(--elevation-3);
+    --shadow-glass-hover:
+      0 1px 1px rgba(17, 24, 39, 0.04), 0 14px 30px -16px rgba(17, 24, 39, 0.18),
+      0 36px 64px -34px rgba(17, 24, 39, 0.22);
+    --shadow-float: var(--elevation-4);
+
+    /* ---- lines ---- */
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+
+    /* ---- text ---- */
+    --text: #1f2937;
+    --text-2: #4b5563;
+    --text-3: #6b7280;
+
+    /* ---- brand ---- */
+    --brand: #12706b;
+    --brand-hover: #0e5b57;
+    --brand-soft: rgba(18, 112, 107, 0.12);
+    --brand-contrast: #ffffff;
+    --brand-glow: rgba(18, 112, 107, 0.26);
+
+    /* ---- accents (small icon accents and chart series, never a panel fill) ---- */
+    --violet: #6d4bd6;
+    --violet-soft: rgba(109, 75, 214, 0.12);
+    --cyan: #0e7490;
+    --cyan-soft: rgba(14, 116, 144, 0.12);
+    --teal: #12706b;
+    --teal-soft: rgba(18, 112, 107, 0.12);
+    /* Dull yellow: the identity colour of the asset category. It is
+       deliberately darker and less orange than --warning, so an asset chip
+       never reads as a warning. */
+    --gold: #7d6d10;
+    --gold-soft: rgba(125, 109, 16, 0.12);
+
+    /* ---- navigation rail: a solid teal pane of glass, so it reads as a
+           distinct object against the white working surface ---- */
+    --sidebar-bg: #004d4d;
+    --sidebar-text: #ffffff;
+    --sidebar-text-muted: rgba(255, 255, 255, 0.72);
+    --sidebar-active-bg: #006666;
+    --sidebar-active-fg: #ffffff;
+    --sidebar-active-indicator: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.16);
+    --sidebar-hover: rgba(255, 255, 255, 0.1);
+    --sidebar-panel: rgba(255, 255, 255, 0.1);
+    --sidebar-edge-top: rgba(255, 255, 255, 0.28);
+    --sidebar-danger: #ffe0e4;
+    --sidebar-active-shadow: 0 8px 18px -12px rgba(0, 45, 45, 0.45);
+    /* The rail's own sheen. It has to be a translucent white over the teal, not
+       the near-opaque card fill, or the fill would hide the colour underneath. */
+    --sidebar-fill: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.04) 46%,
+      rgba(0, 0, 0, 0.03) 100%
+    );
+    --sidebar-shadow:
+      0 1px 1px rgba(0, 38, 38, 0.12), 0 12px 28px -16px rgba(0, 38, 38, 0.35),
+      0 34px 64px -38px rgba(0, 38, 38, 0.45);
+
+    /* ---- semantic ---- */
+    --success: #0f7a45;
+    --success-soft: rgba(15, 122, 69, 0.12);
+    --warning: #a2650a;
+    --warning-soft: rgba(199, 129, 18, 0.14);
+    --danger: #b0203a;
+    --danger-soft: rgba(207, 47, 69, 0.12);
+    --info: #0f6f68;
+    --info-soft: rgba(15, 111, 104, 0.12);
+
+    /*
+     * What sits *on* a saturated fill.
+     *
+     * The dark palette's semantic colours are light tints so they read on a
+     * dark panel, which means white text on top of them lands near 2.5:1. The
+     * foreground for a filled surface is therefore its own token, and it flips
+     * with the theme rather than assuming white.
+     */
+    --on-brand: #ffffff;
+    --on-danger: #ffffff;
+
+    /* ---- charts ---- */
+    --chart-1: #12706b;
+    --chart-2: #6d4bd6;
+    --chart-3: #0e7490;
+    --chart-4: #c27c05;
+    --chart-5: #0f7a45;
+    --chart-grid: rgba(31, 41, 55, 0.08);
+    --chart-area: rgba(18, 112, 107, 0.14);
+    --chart-area-warm: rgba(194, 124, 5, 0.14);
+    --chart-area-good: rgba(15, 122, 69, 0.12);
+    --chart-area-bad: rgba(207, 47, 69, 0.12);
+
+    /* ---- avatars, hashed by name ---- */
+    /* Each chip carries white initials, so every tint here is dark enough for
+       white to clear 4.5:1 on it. */
+    --avatar-1: #12706b;
+    --avatar-2: #6d4bd6;
+    --avatar-3: #0f7a45;
+    --avatar-4: #8f5c05;
+    --avatar-5: #c2263c;
+    --avatar-6: #0b7c72;
+    --avatar-fg: #ffffff;
+    /* Neutral chip for product thumbnails, which are placeholders for a photo
+       and must not compete with the row they sit in. */
+    --avatar-neutral-bg: #f3f4f6;
+    --avatar-neutral-fg: #6b7280;
+
+    /* ================================================================
+     * The sign-in panel.
+     *
+     * The login screen is a split, and the brand half is derived from the
+     * active palette at the panel itself (see `.auth-panel` below). It used
+     * to be a fixed teal, which meant the login screen and the app disagreed
+     * about which theme the shop had chosen.
+     * ================================================================ */
+
+    /* ================================================================
+     * Legacy aliases.
+     *
+     * Components written before the rename still reference these. They are
+     * derived from the tokens above rather than being a second palette, so
+     * there is still exactly one place a colour is defined.
+     * ================================================================ */
+    --page: var(--bg);
+    --surface-raised: var(--surface);
+    --surface-sunken: var(--surface-2);
+    --surface-overlay: rgba(0, 0, 0, 0.42);
+    --divider: var(--border);
+    --text-primary: var(--text);
+    --text-secondary: var(--text-2);
+    --text-muted: var(--text-3);
+    --text-inverse: var(--brand-contrast);
+    --paper: #ffffff;
+
+    /* The names the appearance system is specified in. They are aliases, not a
+       second palette: a component may say `--primary` or `--brand` and gets the
+       same value, so the vocabulary can grow without duplicating colours. */
+    --app-bg: var(--bg);
+    --header-bg: var(--surface-header);
+    --surface-hover: var(--surface-2);
+    --surface-active: var(--surface-3);
+    --primary: var(--brand);
+    --primary-hover: var(--brand-hover);
+    --primary-subtle: var(--brand-soft);
+    --focus-ring: var(--brand);
+    --overlay-bg: var(--surface-overlay);
+
+    --brand-50: var(--brand-soft);
+    --brand-100: #d0ebe8;
+    --brand-200: #a6d9d4;
+    --brand-300: #78c5be;
+    --brand-400: #449f97;
+    --brand-500: #1f8a82;
+    --brand-600: var(--brand);
+    --brand-700: var(--brand-hover);
+    --brand-800: #0c5551;
+    --brand-900: #094440;
+    --brand-bright: #1f8a82;
+
+    --success-fg: var(--success);
+    --warning-fg: var(--warning);
+    --danger-fg: var(--danger);
+    --info-fg: var(--info);
+
+    --chart-primary: var(--chart-1);
+    --chart-secondary: var(--chart-2);
+    --chart-amber: var(--chart-4);
+    --chart-green: var(--success);
+
+    --shadow-sm: var(--elevation-1);
+    --shadow-md: var(--elevation-2);
+    --shadow-card: var(--shadow-glass);
+    --shadow-raised: var(--shadow-md);
+    --shadow-overlay: var(--shadow-float);
+    --shadow-focus: 0 0 0 3px rgba(18, 112, 107, 0.22);
+    --shadow-topbar: var(--shadow-float);
+    --shadow-button: 0 1px 2px rgba(17, 24, 39, 0.1);
+
+    --table-row-hover: #f9fafb;
+    /* Search results. The tint is derived from the live accent, so every
+       palette - including the muted and dark ones - gets its own readable
+       version without a per-theme colour to maintain. */
+    --table-row-match: color-mix(in srgb, var(--brand) 9%, transparent);
+    --table-row-match-hover: color-mix(in srgb, var(--brand) 15%, transparent);
+    --table-row-match-primary: color-mix(in srgb, var(--brand) 17%, transparent);
+    --table-row-match-primary-hover: color-mix(in srgb, var(--brand) 23%, transparent);
+    --table-row-match-indicator: var(--brand);
+    --search-match-bg: color-mix(in srgb, var(--brand) 22%, transparent);
+    --search-match-underline: color-mix(in srgb, var(--brand) 65%, transparent);
+    --table-header-bg: #f9fafb;
+    --kbd-bg: var(--surface-2);
+    --input-bg: #ffffff;
+    --input-border: #e5e7eb;
+    --input-inset: rgba(17, 24, 39, 0.05);
+    --input-focus-ring: var(--brand);
+
+    /* ---- motion ---- */
+    --dur-fast: 140ms;
+    --dur-normal: 200ms;
+    --ease-glass: cubic-bezier(0.22, 0.61, 0.36, 1);
+    /* Opening runs a shade slower than closing, so a modal is readable the
+       instant it lands and still leaves promptly. Both ease out on the way in
+       and ease in on the way out, which is what makes a surface feel like it
+       is being handed to you and then taken back. */
+    --dur-dialog: 200ms;
+    --dur-dialog-close: 180ms;
+    --ease-dialog-out: cubic-bezier(0.4, 0, 1, 1);
+    /* The rail. One value, read by both the sidebar's own width and the page
+       margin beside it, so the two can never drift out of step. The easing is
+       a standard decelerate curve: fast at first so the rail answers the click
+       immediately, then settling rather than stopping dead. */
+    --dur-sidebar: 200ms;
+    --ease-sidebar: cubic-bezier(0.4, 0, 0.2, 1);
+    /* The old page colour is washed over the new theme and faded out. 220ms is
+       long enough to read as a crossfade rather than a flash, and short enough
+       that a second click does not land on a wash still in flight. */
+    --dur-theme: 220ms;
+    /* How far a drawer starts from its own edge. Physical, not logical: the
+       element is already placed with start-0/end-0, so the offset has to be
+       signed against the reading direction to land off the correct side. */
+    --drawer-from-end: 100%;
+    --drawer-from-start: -100%;
+
+    /* ---- metrics ---- */
+    --radius-panel: 20px;
+    --radius-sidebar: 28px;
+    --radius-control: 12px;
+    /* The floating header: one pill of glass, sticky at the top of the page. */
+    --radius-header: 22px;
+    --header-height: 60px;
+    --sidebar-panel-width: 252px;
+    --sidebar-gutter: 16px;
+    /* The rail reserves its own width plus the gutter on each side, so the page
+       content aligns with the floating panel rather than with the window. */
+    --sidebar-width: calc(var(--sidebar-panel-width) + var(--sidebar-gutter) * 2);
+    --sidebar-panel-width-collapsed: 60px;
+    --sidebar-width-collapsed: calc(
+      var(--sidebar-panel-width-collapsed) + var(--sidebar-gutter) * 2
+    );
+    --bottomnav-height: 68px;
+  }
+
+  /* The app is English-only today, but the rest of this file already carries
+     `:lang(ar)` and `[dir=rtl]` rules for Cairo. Mirroring the two drawer
+     offsets here keeps that promise honest: a right drawer in RTL starts from
+     the left, not from the right. */
+  :root[dir="rtl"] {
+    --drawer-from-end: -100%;
+    --drawer-from-start: 100%;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    /* ---- page ---- */
+    /* One flat teal across the whole frame. The page, the gutters, the working
+       panel and the rail are all the same value, so the dark theme reads as one
+       continuous surface; the rim, the shadow and the highlight carry the depth
+       instead of a second colour. */
+    --bg: #002a2a;
+    --main-bg: #002a2a;
+
+    /* ---- glass surfaces ---- */
+    /* Cards use the same value as the page, exactly as the light palette's
+       white-on-white cards do: the rim, the sheen and the cast shadow are what
+       separate them. */
+    --surface: #002a2a;
+    --surface-2: rgba(255, 255, 255, 0.06);
+    --surface-3: rgba(255, 255, 255, 0.04);
+    /* Floating surfaces get their own, denser fill. A menu that blurs the page
+       needs a base colour to mix it down with, or the raw field behind it comes
+       through at full strength. */
+    --surface-float: #002a2a;
+    /* Translucent, for the same reason as the light theme's: a dense fill over
+       a moving page reads as a slab, not as glass. The blur mixes the content
+       behind it down; the fill only gives the blur something to sit on. */
+    --surface-header: rgba(0, 42, 42, 0.75);
+    /* The dark palette is flat: no gradient sheen on any surface. */
+    --glass-fill-header: none;
+    --glass-fill: none;
+    --glass-border: #0f4a4a;
+    --glass-edge-top: rgba(255, 255, 255, 0.14);
+    --glass-edge-bottom: rgba(0, 0, 0, 0.3);
+    --glass-inner-glow: transparent;
+
+    /* ---- elevation ---- */
+    /* Dark leans on the rim and the cast shadow, not on darkness. The four
+       levels are the same four as the light palette, re-expressed. */
+    --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --elevation-2: 0 1px 1px rgba(0, 0, 0, 0.35), 0 8px 18px -12px rgba(0, 0, 0, 0.7);
+    --elevation-3:
+      0 1px 1px rgba(0, 0, 0, 0.35), 0 12px 26px -16px rgba(0, 0, 0, 0.75),
+      0 32px 56px -32px rgba(0, 0, 0, 0.8);
+    --elevation-4: 0 2px 6px -2px rgba(0, 0, 0, 0.5), 0 20px 44px -22px rgba(0, 0, 0, 0.8);
+    --shadow-glass: var(--elevation-3);
+    --shadow-glass-hover:
+      0 1px 1px rgba(0, 0, 0, 0.35), 0 16px 32px -16px rgba(0, 0, 0, 0.8),
+      0 40px 68px -34px rgba(0, 0, 0, 0.85);
+    --shadow-float: var(--elevation-4);
+
+    /* ---- lines ---- */
+    --border: #0f4a4a;
+    --border-strong: #1c6161;
+
+    /* ---- text ---- */
+    --text: #ffffff;
+    --text-2: #c5dad6;
+    --text-3: #9dbab5;
+
+    /* ---- brand ---- */
+    /* A muted sea-glass accent: light enough to read on the panels, but without
+       the mint brightness of a neon highlight. */
+    --brand: #74bdb2;
+    --brand-hover: #8fd0c6;
+    --brand-soft: rgba(116, 189, 178, 0.13);
+    --brand-contrast: #041f1d;
+    --brand-glow: rgba(116, 189, 178, 0.2);
+
+    /* ---- accents ---- */
+    --violet: #b7a6e8;
+    --violet-soft: rgba(183, 166, 232, 0.14);
+    --cyan: #86c7db;
+    --cyan-soft: rgba(134, 199, 219, 0.12);
+    --teal: #74bdb2;
+    --teal-soft: rgba(116, 189, 178, 0.13);
+    /* Dull yellow, the asset category's identity colour: less orange than the
+       warning tone so the two can sit in the same tree without confusion. */
+    --gold: #cfc46c;
+    --gold-soft: rgba(207, 196, 108, 0.14);
+
+    /* ---- navigation rail ---- */
+    /* The rail is the same value as the working panel, so navigation belongs to
+       the surface rather than reading as a darker column beside it. The rim and
+       the lit active pill carry the separation. */
+    --sidebar-bg: #002a2a;
+    --sidebar-text: #f2f7f6;
+    --sidebar-text-muted: #a7c5c0;
+    --sidebar-active-bg: #0d4f4f;
+    --sidebar-active-fg: #ffffff;
+    --sidebar-active-indicator: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.09);
+    --sidebar-hover: rgba(255, 255, 255, 0.06);
+    --sidebar-panel: rgba(255, 255, 255, 0.04);
+    --sidebar-edge-top: rgba(255, 255, 255, 0.14);
+    --sidebar-danger: #ffb3be;
+    --sidebar-active-shadow: 0 8px 18px -12px rgba(0, 0, 0, 0.45);
+    --sidebar-fill: none;
+    --sidebar-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.35), 0 14px 32px -18px rgba(0, 0, 0, 0.55),
+      0 36px 68px -38px rgba(0, 0, 0, 0.6);
+
+    /* ---- semantic ---- */
+    --success: #7fd3a0;
+    --success-soft: rgba(127, 211, 160, 0.14);
+    --warning: #e3be72;
+    --warning-soft: rgba(227, 190, 114, 0.14);
+    --danger: #f29aa4;
+    --danger-soft: rgba(242, 154, 164, 0.15);
+    --info: #74bdb2;
+    --info-soft: rgba(116, 189, 178, 0.13);
+    --on-brand: #041f1d;
+    --on-danger: #3a0a11;
+
+    /* ---- charts ---- */
+    --chart-1: #74bdb2;
+    --chart-2: #b7a6e8;
+    --chart-3: #86c7db;
+    --chart-4: #e3be72;
+    --chart-5: #7fd3a0;
+    --chart-grid: rgba(255, 255, 255, 0.08);
+    --chart-area: rgba(116, 189, 178, 0.15);
+    --chart-area-warm: rgba(227, 190, 114, 0.14);
+    --chart-area-good: rgba(127, 211, 160, 0.14);
+    --chart-area-bad: rgba(242, 154, 164, 0.14);
+
+    /* ---- avatars ---- */
+    /* The dark palette is the bright one, which is why its initials are dark:
+       white on a chip this light would sit near 2.5:1. */
+    --avatar-1: #74bdb2;
+    --avatar-2: #b7a6e8;
+    --avatar-3: #7fd3a0;
+    --avatar-4: #e3be72;
+    --avatar-5: #f29aa4;
+    --avatar-6: #86c7db;
+    --avatar-fg: #041f1d;
+    --avatar-neutral-bg: rgba(255, 255, 255, 0.09);
+    --avatar-neutral-fg: #c5dad6;
+
+    /* ---- legacy aliases ---- */
+    --surface-overlay: rgba(0, 0, 0, 0.7);
+    --brand-50: var(--brand-soft);
+    --brand-100: #041a18;
+    --brand-200: #05211e;
+    --brand-300: #072824;
+    --brand-400: #092f2a;
+    --brand-500: #0b322d;
+    --brand-600: var(--brand);
+    --brand-700: var(--brand-hover);
+    --brand-800: #a6ddd4;
+    --brand-900: #c9ede7;
+
+    --shadow-overlay: var(--shadow-float);
+    --shadow-focus: 0 0 0 3px rgba(116, 189, 178, 0.28);
+    --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+    --table-row-hover: rgba(255, 255, 255, 0.06);
+    --table-header-bg: rgba(255, 255, 255, 0.04);
+    --input-bg: rgba(255, 255, 255, 0.06);
+    --input-border: #0f4a4a;
+    --input-inset: rgba(0, 0, 0, 0.2);
+  }
+
+  /* ======================================================================
+   * Colour packs.
+   *
+   * Fifteen palettes, each with a light and a dark mode. A pack states only its
+   * identity: the page and its panels, the ink, the action colour, the rail and
+   * the accent family. Everything else - hover tints, hairlines, specular
+   * edges, the rail's own light, chart series and avatar tints - is derived
+   * once, below, from those few values, so fifteen packs cannot drift apart in
+   * the details nobody re-checks.
+   *
+   * Scoping is by `data-theme` as well as `data-palette`: a light pack and a
+   * dark pack can share a name without one leaking into the other, and any
+   * element can carry the pair to preview that palette in isolation - the
+   * Appearance screen does exactly that for its preview cards.
+   *
+   * Ocean Teal is the built-in default. Its block repeats the values `:root`
+   * and `.dark` already carry, so selecting it changes nothing, while a preview
+   * card for it still has a complete palette to draw from.
+   * ====================================================================== */
+
+  /* Midnight Navy - light */
+  [data-theme="light"][data-palette="midnight-navy"] {
+    --bg: #eef2f9;
+    --main-bg: #ffffff;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #16233a;
+    --brand: #1f4e8c;
+    --brand-hover: #173d6f;
+    --violet: #5f56c8;
+    --cyan: #2a7099;
+    --teal: #26797f;
+    --gold: #7d6d10;
+    --info: #2f6fa8;
+    --sidebar-bg: #10213c;
+    --sidebar-text: #ffffff;
+    --sidebar-active-bg: #1c3f6b;
+    --sidebar-active-fg: #ffffff;
+  }
+
+  /* Midnight Navy - dark */
+  [data-theme="dark"][data-palette="midnight-navy"] {
+    --bg: #0a1220;
+    --main-bg: #0e1828;
+    --surface: #111d30;
+    --surface-float: #142136;
+    --text: #f2f6fc;
+    --brand: #7aa7e8;
+    --brand-hover: #96bcf0;
+    --violet: #b3a8f0;
+    --cyan: #8ec9e8;
+    --teal: #7fc6cc;
+    --gold: #d5c76e;
+    --info: #8fc2e6;
+    --sidebar-bg: #0b1424;
+    --sidebar-text: #eaf2fd;
+    --sidebar-active-bg: #1b3556;
+    --sidebar-active-fg: #eaf2fd;
+  }
+
+  /* Obsidian Black - light */
+  [data-theme="light"][data-palette="obsidian-black"] {
+    --bg: #f1f2f3;
+    --main-bg: #fafafa;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #14161a;
+    --brand: #2f343c;
+    --brand-hover: #22262d;
+    --violet: #6a63b4;
+    --cyan: #3f6f86;
+    --teal: #3f7a75;
+    --gold: #7d6d10;
+    --info: #5f6b78;
+    --sidebar-bg: #16181b;
+    --sidebar-text: #ffffff;
+    --sidebar-active-bg: #2c3138;
+    --sidebar-active-fg: #ffffff;
+  }
+
+  /* Obsidian Black - dark */
+  [data-theme="dark"][data-palette="obsidian-black"] {
+    --bg: #08090a;
+    --main-bg: #0c0d0f;
+    --surface: #101113;
+    --surface-float: #141518;
+    --text: #f5f5f6;
+    --brand: #a9adb6;
+    --brand-hover: #c3c7cf;
+    --violet: #b5afe2;
+    --cyan: #9cc3d5;
+    --teal: #93c8c3;
+    --gold: #d8cb74;
+    --info: #b6bfc9;
+    --sidebar-bg: #0a0b0d;
+    --sidebar-text: #eef0f2;
+    --sidebar-active-bg: #262a30;
+    --sidebar-active-fg: #eef0f2;
+  }
+
+  /* Ocean Teal - light */
+  [data-theme="light"][data-palette="ocean-teal"] {
+    --bg: #ffffff;
+    --main-bg: #ffffff;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #1f2937;
+    --brand: #12706b;
+    --brand-hover: #0e5b57;
+    --violet: #6d4bd6;
+    --cyan: #0e7490;
+    --teal: #12706b;
+    --gold: #7d6d10;
+    --info: #0f6f68;
+    --sidebar-bg: #004d4d;
+    --sidebar-text: #ffffff;
+    --sidebar-active-bg: #006666;
+    --sidebar-active-fg: #ffffff;
+  }
+
+  /* Ocean Teal - dark */
+  [data-theme="dark"][data-palette="ocean-teal"] {
+    --bg: #002a2a;
+    --main-bg: #002a2a;
+    --surface: #002a2a;
+    --surface-float: #002a2a;
+    --text: #ffffff;
+    --brand: #74bdb2;
+    --brand-hover: #8fd0c6;
+    --violet: #b7a6e8;
+    --cyan: #86c7db;
+    --teal: #74bdb2;
+    --gold: #cfc46c;
+    --info: #74bdb2;
+    --sidebar-bg: #002a2a;
+    --sidebar-text: #f2f7f6;
+    --sidebar-active-bg: #0d4f4f;
+    --sidebar-active-fg: #ffffff;
+  }
+
+  /* Royal Indigo - light */
+  [data-theme="light"][data-palette="royal-indigo"] {
+    --bg: #f3f2fb;
+    --main-bg: #ffffff;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #211c3a;
+    --brand: #4b3ba8;
+    --brand-hover: #3b2d8a;
+    --violet: #6b4bd6;
+    --cyan: #4666b8;
+    --teal: #367078;
+    --gold: #7d6d10;
+    --info: #4a5fb8;
+    --sidebar-bg: #241d4d;
+    --sidebar-text: #ffffff;
+    --sidebar-active-bg: #382c74;
+    --sidebar-active-fg: #ffffff;
+  }
+
+  /* Royal Indigo - dark */
+  [data-theme="dark"][data-palette="royal-indigo"] {
+    --bg: #0f0c1d;
+    --main-bg: #141026;
+    --surface: #181331;
+    --surface-float: #1c1738;
+    --text: #f4f2ff;
+    --brand: #a99bf2;
+    --brand-hover: #bdb2f7;
+    --violet: #b7a6e8;
+    --cyan: #9db1ea;
+    --teal: #8fbdd0;
+    --gold: #cfc46c;
+    --info: #a4b4f0;
+    --sidebar-bg: #110d21;
+    --sidebar-text: #f0ecfd;
+    --sidebar-active-bg: #2b2352;
+    --sidebar-active-fg: #f0ecfd;
+  }
+
+  /* Emerald Forest - light */
+  [data-theme="light"][data-palette="emerald-forest"] {
+    --bg: #eef4ef;
+    --main-bg: #fbfdfb;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #14251b;
+    --brand: #17724a;
+    --brand-hover: #115c3b;
+    --violet: #5f68bb;
+    --cyan: #2f7f7a;
+    --teal: #17806a;
+    --gold: #7d6d10;
+    --info: #2f7f6a;
+    --sidebar-bg: #123a2a;
+    --sidebar-text: #f2fbf6;
+    --sidebar-active-bg: #1d5b41;
+    --sidebar-active-fg: #f2fbf6;
+  }
+
+  /* Emerald Forest - dark */
+  [data-theme="dark"][data-palette="emerald-forest"] {
+    --bg: #07130e;
+    --main-bg: #0a1811;
+    --surface: #0d1e16;
+    --surface-float: #11251b;
+    --text: #eefaf3;
+    --brand: #6fd39b;
+    --brand-hover: #8ce0b0;
+    --violet: #aeb6e8;
+    --cyan: #8fc9c4;
+    --teal: #7fd3b8;
+    --gold: #d3c86e;
+    --info: #8fd0ba;
+    --sidebar-bg: #08150f;
+    --sidebar-text: #eafaf1;
+    --sidebar-active-bg: #1b4532;
+    --sidebar-active-fg: #eafaf1;
+  }
+
+  /* Arctic Blue - light */
+  [data-theme="light"][data-palette="arctic-blue"] {
+    --bg: #eff6fb;
+    --main-bg: #ffffff;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #12283a;
+    --brand: #0e6f9e;
+    --brand-hover: #0b5a80;
+    --violet: #5f63c8;
+    --cyan: #0c7099;
+    --teal: #147077;
+    --gold: #7d6d10;
+    --info: #0d6f9a;
+    --sidebar-bg: #123c55;
+    --sidebar-text: #ffffff;
+    --sidebar-active-bg: #1c5674;
+    --sidebar-active-fg: #ffffff;
+  }
+
+  /* Arctic Blue - dark */
+  [data-theme="dark"][data-palette="arctic-blue"] {
+    --bg: #081522;
+    --main-bg: #0b1b2a;
+    --surface: #0e2133;
+    --surface-float: #122840;
+    --text: #eef7ff;
+    --brand: #6fc0e8;
+    --brand-hover: #8ed2f2;
+    --violet: #b0b3ee;
+    --cyan: #8fd2f2;
+    --teal: #8fd0d5;
+    --gold: #d5c76e;
+    --info: #8fc8ea;
+    --sidebar-bg: #091724;
+    --sidebar-text: #eaf6ff;
+    --sidebar-active-bg: #1d4563;
+    --sidebar-active-fg: #eaf6ff;
+  }
+
+  /* Burgundy Wine - light */
+  [data-theme="light"][data-palette="burgundy-wine"] {
+    --bg: #faf4f3;
+    --main-bg: #fffdfc;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #2b1a1e;
+    --brand: #7e2440;
+    --brand-hover: #661b33;
+    --violet: #8a5f9e;
+    --cyan: #3f6f85;
+    --teal: #357068;
+    --gold: #7d6d10;
+    --info: #7a5f96;
+    --sidebar-bg: #3f1522;
+    --sidebar-text: #fff5f4;
+    --sidebar-active-bg: #61243a;
+    --sidebar-active-fg: #fff5f4;
+  }
+
+  /* Burgundy Wine - dark */
+  [data-theme="dark"][data-palette="burgundy-wine"] {
+    --bg: #150a0d;
+    --main-bg: #1b0d11;
+    --surface: #221015;
+    --surface-float: #281419;
+    --text: #fbf0f1;
+    --brand: #dd90a2;
+    --brand-hover: #eaa9b8;
+    --violet: #c7a6d6;
+    --cyan: #9cc3d5;
+    --teal: #8fc7c0;
+    --gold: #dccd78;
+    --info: #c4aad6;
+    --sidebar-bg: #170b0e;
+    --sidebar-text: #faedef;
+    --sidebar-active-bg: #40202a;
+    --sidebar-active-fg: #faedef;
+  }
+
+  /* Amethyst Violet - light */
+  [data-theme="light"][data-palette="amethyst-violet"] {
+    --bg: #f6f2fb;
+    --main-bg: #fdfbff;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #241a33;
+    --brand: #6b3fa0;
+    --brand-hover: #57308a;
+    --violet: #6b3fa0;
+    --cyan: #5b6fb8;
+    --teal: #3d707a;
+    --gold: #7d6d10;
+    --info: #6b5fb8;
+    --sidebar-bg: #2c1a45;
+    --sidebar-text: #f8f2ff;
+    --sidebar-active-bg: #452a68;
+    --sidebar-active-fg: #f8f2ff;
+  }
+
+  /* Amethyst Violet - dark */
+  [data-theme="dark"][data-palette="amethyst-violet"] {
+    --bg: #120c1c;
+    --main-bg: #170f24;
+    --surface: #1c132c;
+    --surface-float: #221735;
+    --text: #f7f1ff;
+    --brand: #c19bf0;
+    --brand-hover: #d2b4f7;
+    --violet: #c19bf0;
+    --cyan: #a6b3ec;
+    --teal: #94c6cf;
+    --gold: #dbc978;
+    --info: #b0a6ec;
+    --sidebar-bg: #130d1e;
+    --sidebar-text: #f4ecff;
+    --sidebar-active-bg: #372452;
+    --sidebar-active-fg: #f4ecff;
+  }
+
+  /* Copper Bronze - light */
+  [data-theme="light"][data-palette="copper-bronze"] {
+    --bg: #f7f3ee;
+    --main-bg: #fffdfa;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #2b211a;
+    --brand: #a04f1c;
+    --brand-hover: #86400f;
+    --violet: #7a5f8e;
+    --cyan: #3f6f7a;
+    --teal: #3a7066;
+    --gold: #7d6d10;
+    --info: #8a6a4a;
+    --sidebar-bg: #33231a;
+    --sidebar-text: #fff8f2;
+    --sidebar-active-bg: #573425;
+    --sidebar-active-fg: #fff8f2;
+  }
+
+  /* Copper Bronze - dark */
+  [data-theme="dark"][data-palette="copper-bronze"] {
+    --bg: #14100d;
+    --main-bg: #19140f;
+    --surface: #201913;
+    --surface-float: #27201a;
+    --text: #fdf6ee;
+    --brand: #e3a06a;
+    --brand-hover: #eeb384;
+    --violet: #c5aad4;
+    --cyan: #9cc4cc;
+    --teal: #93c4ba;
+    --gold: #e0c47a;
+    --info: #d4b394;
+    --sidebar-bg: #16110d;
+    --sidebar-text: #fbf2e8;
+    --sidebar-active-bg: #43301f;
+    --sidebar-active-fg: #fbf2e8;
+  }
+
+  /* Crimson Red - light */
+  [data-theme="light"][data-palette="crimson-red"] {
+    --bg: #faf3f3;
+    --main-bg: #fffdfd;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #2a1c1e;
+    --brand: #a41f33;
+    --brand-hover: #88172a;
+    --violet: #8a5f8e;
+    --cyan: #3f6f85;
+    --teal: #357068;
+    --gold: #7d6d10;
+    --info: #a0526a;
+    --sidebar-bg: #3d1420;
+    --sidebar-text: #fff5f6;
+    --sidebar-active-bg: #5e1f30;
+    --sidebar-active-fg: #fff5f6;
+  }
+
+  /* Crimson Red - dark */
+  [data-theme="dark"][data-palette="crimson-red"] {
+    --bg: #140b0d;
+    --main-bg: #1a0e11;
+    --surface: #201216;
+    --surface-float: #26161a;
+    --text: #fdf2f3;
+    --brand: #ee8c99;
+    --brand-hover: #f4a6b0;
+    --violet: #c7a4cc;
+    --cyan: #9cc3d5;
+    --teal: #8fc7c0;
+    --gold: #dccd78;
+    --info: #e2a4b4;
+    --sidebar-bg: #160b0e;
+    --sidebar-text: #fceef0;
+    --sidebar-active-bg: #3f1d26;
+    --sidebar-active-fg: #fceef0;
+  }
+
+  /* Slate Professional - light */
+  [data-theme="light"][data-palette="slate-professional"] {
+    --bg: #f4f6f8;
+    --main-bg: #ffffff;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #1e2a33;
+    --brand: #3d5a70;
+    --brand-hover: #2f4859;
+    --violet: #5a649c;
+    --cyan: #336f8e;
+    --teal: #35706f;
+    --gold: #7d6d10;
+    --info: #3f6f9e;
+    --sidebar-bg: #24343f;
+    --sidebar-text: #f6f9fb;
+    --sidebar-active-bg: #354c5b;
+    --sidebar-active-fg: #f6f9fb;
+  }
+
+  /* Slate Professional - dark */
+  [data-theme="dark"][data-palette="slate-professional"] {
+    --bg: #0d1318;
+    --main-bg: #111920;
+    --surface: #151f27;
+    --surface-float: #19242d;
+    --text: #f1f6fa;
+    --brand: #9db9cc;
+    --brand-hover: #b4cbdb;
+    --violet: #aeb4dc;
+    --cyan: #9cc4d8;
+    --teal: #93c4c4;
+    --gold: #d6c974;
+    --info: #9cc0dc;
+    --sidebar-bg: #0f161b;
+    --sidebar-text: #edf4f8;
+    --sidebar-active-bg: #2b404e;
+    --sidebar-active-fg: #edf4f8;
+  }
+
+  /* Pearl White - light */
+  [data-theme="light"][data-palette="pearl-white"] {
+    --bg: #f6f6f7;
+    --main-bg: #ffffff;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #23262b;
+    --brand: #5c6470;
+    --brand-hover: #4a515c;
+    --violet: #6963aa;
+    --cyan: #3f6f89;
+    --teal: #3f7470;
+    --gold: #7d6d10;
+    --info: #5f7488;
+    --sidebar-bg: #fafafb;
+    --sidebar-text: #23262b;
+    --sidebar-active-bg: #e9ebee;
+    --sidebar-active-fg: #121417;
+  }
+
+  /* Pearl White - dark */
+  [data-theme="dark"][data-palette="pearl-white"] {
+    --bg: #14161a;
+    --main-bg: #191c21;
+    --surface: #1e2127;
+    --surface-float: #23262d;
+    --text: #f4f5f7;
+    --brand: #cdd3da;
+    --brand-hover: #dee3e9;
+    --violet: #b3aede;
+    --cyan: #9cc4d6;
+    --teal: #94c8c4;
+    --gold: #cfc46c;
+    --info: #aebecb;
+    --sidebar-bg: #101216;
+    --sidebar-text: #eef0f3;
+    --sidebar-active-bg: #2a2f36;
+    --sidebar-active-fg: #eef0f3;
+  }
+
+  /* Carbon Graphite - light */
+  [data-theme="light"][data-palette="carbon-graphite"] {
+    --bg: #f1f2f3;
+    --main-bg: #fafafa;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #1b1d20;
+    --brand: #4a4f57;
+    --brand-hover: #3a3f46;
+    --violet: #6a6d95;
+    --cyan: #4a6f7e;
+    --teal: #3f7270;
+    --gold: #7d6d10;
+    --info: #5f6f7b;
+    --sidebar-bg: #2a2d31;
+    --sidebar-text: #f4f5f6;
+    --sidebar-active-bg: #41464d;
+    --sidebar-active-fg: #f4f5f6;
+  }
+
+  /* Carbon Graphite - dark */
+  [data-theme="dark"][data-palette="carbon-graphite"] {
+    --bg: #101214;
+    --main-bg: #14171a;
+    --surface: #181b1f;
+    --surface-float: #1d2125;
+    --text: #eceef1;
+    --brand: #b9bec6;
+    --brand-hover: #cdd2d9;
+    --violet: #b4b7d2;
+    --cyan: #a4c2ce;
+    --teal: #94c6c4;
+    --gold: #d6ca74;
+    --info: #b6c2cb;
+    --sidebar-bg: #0d0f11;
+    --sidebar-text: #eceef1;
+    --sidebar-active-bg: #30353b;
+    --sidebar-active-fg: #eceef1;
+  }
+
+  /* Sage Green - light */
+  [data-theme="light"][data-palette="sage-green"] {
+    --bg: #f4f5ef;
+    --main-bg: #fcfdf8;
+    --surface: #ffffff;
+    --surface-float: #ffffff;
+    --text: #232a22;
+    --brand: #4f6a49;
+    --brand-hover: #405839;
+    --violet: #6a6f90;
+    --cyan: #3f7070;
+    --teal: #4f7a5c;
+    --gold: #7d6d10;
+    --info: #4f7268;
+    --sidebar-bg: #333f31;
+    --sidebar-text: #f7faf3;
+    --sidebar-active-bg: #4a5c46;
+    --sidebar-active-fg: #f7faf3;
+  }
+
+  /* Sage Green - dark */
+  [data-theme="dark"][data-palette="sage-green"] {
+    --bg: #0e120e;
+    --main-bg: #121711;
+    --surface: #161c15;
+    --surface-float: #1b221a;
+    --text: #f2f6ef;
+    --brand: #a9c79c;
+    --brand-hover: #bcd6b0;
+    --violet: #b4b8cc;
+    --cyan: #9cc4c4;
+    --teal: #a8c8ac;
+    --gold: #d3c86e;
+    --info: #a8c4b8;
+    --sidebar-bg: #0f140f;
+    --sidebar-text: #f0f6ec;
+    --sidebar-active-bg: #2e3d2c;
+    --sidebar-active-fg: #f0f6ec;
+  }
+
+  /* Sandstone - light */
+  [data-theme="light"][data-palette="sandstone"] {
+    --bg: #f8f3ea;
+    --main-bg: #fffdf8;
+    --surface: #fffdf8;
+    --surface-float: #fffdf8;
+    --text: #332a20;
+    --brand: #8a6240;
+    --brand-hover: #74502f;
+    --violet: #7a6080;
+    --cyan: #3f707a;
+    --teal: #4a7069;
+    --gold: #7d6d10;
+    --info: #7f6a52;
+    --sidebar-bg: #4a3828;
+    --sidebar-text: #fdf6ec;
+    --sidebar-active-bg: #6a5140;
+    --sidebar-active-fg: #fdf6ec;
+  }
+
+  /* Sandstone - dark */
+  [data-theme="dark"][data-palette="sandstone"] {
+    --bg: #14100b;
+    --main-bg: #191410;
+    --surface: #201a14;
+    --surface-float: #27201a;
+    --text: #f9f2e8;
+    --brand: #d9b48a;
+    --brand-hover: #e6c8a5;
+    --violet: #c6aec0;
+    --cyan: #9cc4cc;
+    --teal: #a4c6bf;
+    --gold: #dcc27a;
+    --info: #cbb49a;
+    --sidebar-bg: #16110c;
+    --sidebar-text: #f7efe4;
+    --sidebar-active-bg: #453427;
+    --sidebar-active-fg: #f7efe4;
+  }
+
+  /* ----------------------------------------------------------------------
+   * The supporting layer, light.
+   *
+   * `--text` is the ink the pack chose, so a warm pack gets warm hairlines and
+   * a cool pack gets cool ones without either being written down. The four
+   * status colours are deliberately not derived: a warning must stay amber in
+   * every palette.
+   *
+   * `[data-preview-surface]` lets a preview card resolve the same derivations
+   * even when the palette it shows is not the one on <html>.
+   * -------------------------------------------------------------------- */
+  [data-theme][data-palette]:not([data-palette="ocean-teal"]),
+  [data-preview-surface] {
+    --surface-2: color-mix(in srgb, var(--text) 4%, transparent);
+    --surface-3: color-mix(in srgb, var(--text) 7%, transparent);
+    --surface-header: color-mix(in srgb, var(--surface-float) 82%, transparent);
+    --glass-fill: none;
+    --glass-fill-header: none;
+    --glass-border: color-mix(in srgb, var(--text) 12%, var(--surface));
+    --glass-edge-top: color-mix(in srgb, #ffffff 92%, var(--surface));
+    --glass-edge-bottom: color-mix(in srgb, var(--text) 6%, transparent);
+    --glass-inner-glow: color-mix(in srgb, var(--text) 4%, transparent);
+    --border: color-mix(in srgb, var(--text) 12%, var(--surface));
+    --border-strong: color-mix(in srgb, var(--text) 20%, var(--surface));
+    --text-2: color-mix(in srgb, var(--text) 78%, var(--surface));
+    --text-3: color-mix(in srgb, var(--text) 66%, var(--surface));
+    --brand-soft: color-mix(in srgb, var(--brand) 12%, transparent);
+    --brand-glow: color-mix(in srgb, var(--brand) 26%, transparent);
+    --brand-contrast: #ffffff;
+    --on-brand: #ffffff;
+    --on-danger: #ffffff;
+    --violet-soft: color-mix(in srgb, var(--violet) 12%, transparent);
+    --cyan-soft: color-mix(in srgb, var(--cyan) 12%, transparent);
+    --teal-soft: color-mix(in srgb, var(--teal) 12%, transparent);
+    --gold-soft: color-mix(in srgb, var(--gold) 12%, transparent);
+    --info-soft: color-mix(in srgb, var(--info) 12%, transparent);
+    --sidebar-text-muted: color-mix(in srgb, var(--sidebar-text) 72%, var(--sidebar-bg));
+    --sidebar-active-indicator: var(--sidebar-active-fg);
+    --sidebar-border: color-mix(in srgb, var(--sidebar-text) 16%, transparent);
+    --sidebar-hover: color-mix(in srgb, var(--sidebar-text) 10%, transparent);
+    --sidebar-panel: color-mix(in srgb, var(--sidebar-text) 10%, transparent);
+    --sidebar-edge-top: color-mix(in srgb, var(--sidebar-text) 28%, transparent);
+    /* Mixed with the rail's own ink so the colour works on a dark rail and on
+       the one light rail (Pearl White) without a second rule. */
+    --sidebar-danger: color-mix(in srgb, var(--danger) 55%, var(--sidebar-text));
+    --sidebar-shadow:
+      0 1px 1px color-mix(in srgb, var(--sidebar-bg) 30%, transparent),
+      0 12px 28px -16px color-mix(in srgb, var(--sidebar-bg) 60%, transparent),
+      0 34px 64px -38px color-mix(in srgb, var(--sidebar-bg) 70%, transparent);
+    --sidebar-active-shadow: 0 8px 18px -12px color-mix(in srgb, var(--sidebar-bg) 55%, transparent);
+    --table-row-hover: var(--surface-2);
+    --table-header-bg: var(--surface-2);
+    --input-bg: var(--surface);
+    --input-border: var(--border);
+    --input-inset: color-mix(in srgb, var(--text) 5%, transparent);
+    --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
+    --chart-1: var(--brand);
+    --chart-2: var(--violet);
+    --chart-3: var(--cyan);
+    --chart-4: var(--gold);
+    --chart-5: var(--success);
+    --chart-grid: color-mix(in srgb, var(--text) 8%, transparent);
+    --chart-area: color-mix(in srgb, var(--brand) 14%, transparent);
+    --chart-area-warm: color-mix(in srgb, var(--chart-4) 14%, transparent);
+    --chart-area-good: color-mix(in srgb, var(--success) 13%, transparent);
+    --chart-area-bad: color-mix(in srgb, var(--danger) 13%, transparent);
+    --avatar-1: var(--brand);
+    --avatar-2: var(--violet);
+    --avatar-3: var(--success);
+    --avatar-4: var(--warning);
+    --avatar-5: var(--danger);
+    --avatar-6: var(--teal);
+    --avatar-fg: #ffffff;
+    --avatar-neutral-bg: var(--surface-2);
+    --avatar-neutral-fg: var(--text-3);
+  }
+
+  /* ----------------------------------------------------------------------
+   * The supporting layer, dark.
+   *
+   * The same derivations re-expressed for a dark screen: hairlines are a lift
+   * of the pack's ink rather than a shade, surfaces are stacked by a few
+   * percent of that ink, and the rail's light is dimmer because a near-white
+   * hairline at light-mode strength would outline every row in the rail.
+   * -------------------------------------------------------------------- */
+  [data-theme="dark"][data-palette]:not([data-palette="ocean-teal"]),
+  [data-preview-surface][data-theme="dark"] {
+    --surface-2: color-mix(in srgb, var(--text) 6%, transparent);
+    --surface-3: color-mix(in srgb, var(--text) 9%, transparent);
+    --surface-header: color-mix(in srgb, var(--surface-float) 76%, transparent);
+    --glass-fill: none;
+    --glass-fill-header: none;
+    --glass-border: color-mix(in srgb, var(--text) 8%, var(--bg));
+    --glass-edge-top: color-mix(in srgb, var(--text) 14%, transparent);
+    --glass-edge-bottom: rgba(0, 0, 0, 0.3);
+    --glass-inner-glow: transparent;
+    --border: color-mix(in srgb, var(--text) 8%, var(--bg));
+    --border-strong: color-mix(in srgb, var(--text) 14%, var(--bg));
+    --text-2: color-mix(in srgb, var(--text) 82%, var(--surface));
+    --text-3: color-mix(in srgb, var(--text) 66%, var(--surface));
+    --brand-soft: color-mix(in srgb, var(--brand) 14%, transparent);
+    --brand-glow: color-mix(in srgb, var(--brand) 20%, transparent);
+    --brand-contrast: #041f1d;
+    --on-brand: #041f1d;
+    --on-danger: #3a0a11;
+    --violet-soft: color-mix(in srgb, var(--violet) 14%, transparent);
+    --cyan-soft: color-mix(in srgb, var(--cyan) 14%, transparent);
+    --teal-soft: color-mix(in srgb, var(--teal) 14%, transparent);
+    --gold-soft: color-mix(in srgb, var(--gold) 14%, transparent);
+    --info-soft: color-mix(in srgb, var(--info) 14%, transparent);
+    --sidebar-text-muted: color-mix(in srgb, var(--sidebar-text) 72%, var(--sidebar-bg));
+    --sidebar-active-indicator: var(--sidebar-active-fg);
+    --sidebar-border: color-mix(in srgb, var(--sidebar-text) 9%, transparent);
+    --sidebar-hover: color-mix(in srgb, var(--sidebar-text) 6%, transparent);
+    --sidebar-panel: color-mix(in srgb, var(--sidebar-text) 4%, transparent);
+    --sidebar-edge-top: color-mix(in srgb, var(--sidebar-text) 14%, transparent);
+    --sidebar-danger: color-mix(in srgb, var(--danger) 55%, var(--sidebar-text));
+    --sidebar-active-shadow: 0 8px 18px -12px rgba(0, 0, 0, 0.45);
+    --table-row-hover: var(--surface-2);
+    --table-header-bg: color-mix(in srgb, var(--text) 4%, transparent);
+    --input-bg: color-mix(in srgb, var(--text) 6%, transparent);
+    --input-border: var(--border);
+    --input-inset: rgba(0, 0, 0, 0.2);
+    --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent);
+    --chart-1: var(--brand);
+    --chart-2: var(--violet);
+    --chart-3: var(--cyan);
+    --chart-4: var(--gold);
+    --chart-5: var(--success);
+    --chart-grid: color-mix(in srgb, var(--text) 8%, transparent);
+    --chart-area: color-mix(in srgb, var(--brand) 15%, transparent);
+    --chart-area-warm: color-mix(in srgb, var(--chart-4) 14%, transparent);
+    --chart-area-good: color-mix(in srgb, var(--success) 14%, transparent);
+    --chart-area-bad: color-mix(in srgb, var(--danger) 14%, transparent);
+    --avatar-1: var(--brand);
+    --avatar-2: var(--violet);
+    --avatar-3: var(--success);
+    --avatar-4: var(--warning);
+    --avatar-5: var(--danger);
+    --avatar-6: var(--teal);
+    --avatar-fg: #041f1d;
+    --avatar-neutral-bg: color-mix(in srgb, var(--text) 9%, transparent);
+    --avatar-neutral-fg: var(--text-2);
+  }
+
+  * {
+    border-color: var(--border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family:
+      Inter,
+      Cairo,
+      system-ui,
+      -apple-system,
+      sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+
+    /*
+     * The room the glass sits in.
+     *
+     * One flat value, painted on the body: white behind the light layout and
+     * pure black behind the dark one. The depth in this app comes from the
+     * glass itself - rim, sheen and cast shadow - so the page stays a single
+     * clean field and every card keeps its edge against it. The main column
+     * paints its own token on top; only the gutters around the floating rail
+     * show this colour once the app shell has rendered.
+     */
+    background-color: var(--bg);
+  }
+
+  :lang(ar),
+  [dir="rtl"] body {
+    font-family: Cairo, Inter, system-ui, sans-serif;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--text);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    /* 8px track minus a 3px transparent border on each side leaves a 2px
+       visible thumb, while the full 8px stays grabbable. */
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-3);
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * The one animation that exists in this file is a control lifting on hover.
+   * Transform only, so the compositor moves it without asking layout for a new
+   * frame.
+   *
+   * Delays go with the durations: an entrance that waits 80ms before it starts
+   * is still an entrance, and cancelling only the duration would leave the
+   * delay behind.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* -----------------------------------------------------------------------
+   * The application frame.
+   *
+   * The rail and the working panel are siblings in one flex row, and this frame
+   * is exactly one viewport tall. The rail is fixed and inset by the sidebar
+   * gutter; the panel is the flex child, inset by the same gutter on its top,
+   * end and bottom edges. Both therefore start and finish on the same lines
+   * however little content a page has, and the page colour stays visible in
+   * every gap around them. `100dvh` tracks a resized desktop window; the
+   * `100vh` line above it is the fallback for engines without the unit.
+   * --------------------------------------------------------------------- */
+  .app-shell {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* The working panel: a floating slab of the same material as the rail. The
+     component supplies the start margin on wide screens (it follows the rail
+     width), and this base margin covers the narrow layout, where the rail is a
+     drawer and the panel floats on all four sides. */
+  .app-main {
+    margin-block: var(--sidebar-gutter);
+    margin-inline-end: var(--sidebar-gutter);
+    margin-inline-start: var(--sidebar-gutter);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sidebar);
+    background-color: var(--main-bg);
+    box-shadow:
+      inset 0 1px 0 var(--glass-edge-top),
+      var(--shadow-glass);
+  }
+
+  /* -----------------------------------------------------------------------
+   * The dashboard seam.
+   *
+   * The dashboard's wide column and its narrow column are two different
+   * sections, not two halves of one card grid, so at the width where they sit
+   * side by side a hairline marks the boundary. It is drawn in the gap rather
+   * than as a border on the column: the narrow column is shorter than the wide
+   * one, and a border would stop at its last card while the seam it describes
+   * continues beside the column on the left.
+   *
+   * The fade at both ends keeps it from reading as the edge of a panel. The
+   * offset is half of the grid's 20px gap, so the line stays centred between
+   * the cards on either side of it.
+   * --------------------------------------------------------------------- */
+  .dashboard-split {
+    position: relative;
+  }
+
+  @media (min-width: 1280px) {
+    .dashboard-split::before {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: -10px;
+      width: 1px;
+      pointer-events: none;
+      background-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        var(--border-strong) 14px,
+        var(--border-strong) calc(100% - 14px),
+        transparent 100%
+      );
+    }
+  }
+
+  /* -----------------------------------------------------------------------
+   * A recessed glass well.
+   *
+   * The same material as everything else, pushed *back* rather than raised: a
+   * lighter fill, an inner shadow along the top and a cool hairline. A raised
+   * panel earns a luminous rim because it catches light; a well needs an edge
+   * that reads as a recess, which is why it borrows the input tokens rather
+   * than the glass ones.
+   * --------------------------------------------------------------------- */
+  .glass-input {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    box-shadow:
+      inset 0 1px 3px var(--input-inset),
+      inset 0 1px 0 var(--glass-edge-top);
+    transition:
+      border-color var(--dur-fast) ease-out,
+      box-shadow var(--dur-fast) ease-out;
+  }
+  .glass-input:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--brand) 45%, var(--input-border));
+  }
+  .glass-input:focus,
+  .glass-input:focus-within {
+    border-color: var(--brand);
+    box-shadow:
+      inset 0 1px 3px var(--input-inset),
+      0 0 0 3px var(--shadow-focus);
+  }
+
+  /* A field that failed validation keeps its own colour, ring included, so the
+     focus state never contradicts the error state. */
+  .glass-input[aria-invalid="true"]:focus,
+  .glass-input[aria-invalid="true"]:focus-within {
+    border-color: var(--danger);
+    box-shadow:
+      inset 0 1px 3px var(--input-inset),
+      0 0 0 3px color-mix(in srgb, var(--danger) 26%, transparent);
+  }
+
+  /* -----------------------------------------------------------------------
+   * The sign-in panel.
+   *
+   * The brand half of the split follows the chosen pack. The rail is the
+   * closest existing surface: a full-height coloured pane with its own ink,
+   * hairline, chip and active fill, so deriving the panel from those tokens
+   * keeps the login screen and the signed-in application in one family.
+   *
+   * Everything is a mix rather than a hard-coded value, which is what lets a
+   * near-black pack, a warm sandstone pack and the one light rail all produce
+   * readable ink without a per-theme block. The accent is pulled towards the
+   * panel's own text so it still reads on both a deep and a pale rail.
+   * --------------------------------------------------------------------- */
+  .auth-panel {
+    --auth-panel-bg: var(--sidebar-bg);
+    --auth-panel-bg-2: color-mix(in srgb, var(--sidebar-bg) 86%, var(--brand));
+    --auth-panel-ink: var(--sidebar-text);
+    --auth-panel-ink-2: var(--sidebar-text-muted);
+    --auth-panel-ink-3: color-mix(in srgb, var(--sidebar-text) 62%, var(--sidebar-bg));
+    --auth-panel-line: var(--sidebar-border);
+    --auth-panel-chip: var(--sidebar-panel);
+    --auth-panel-accent: color-mix(in srgb, var(--brand) 62%, var(--sidebar-text));
+    --auth-panel-accent-soft: color-mix(in srgb, var(--auth-panel-accent) 16%, transparent);
+    --auth-panel-grid: color-mix(in srgb, var(--sidebar-text) 7%, transparent);
+    --auth-panel-glow: color-mix(in srgb, var(--brand) 24%, transparent);
+
+    background-color: var(--auth-panel-bg);
+    background-image:
+      radial-gradient(38rem 26rem at 6% -12%, var(--auth-panel-glow), transparent 62%),
+      linear-gradient(158deg, var(--auth-panel-bg-2) 0%, var(--auth-panel-bg) 58%);
+  }
+
+  /* Dark mode uses the flat brand colour here too. */
+  .dark .auth-panel {
+    background-image: none;
+  }
+
+  /**
+   * The ruling.
+   *
+   * A ledger's grid: one pixel, almost invisible, fading out towards the
+   * bottom so it never competes with the copy. It is a mask over a repeating
+   * gradient rather than a background image so the fade costs nothing.
+   */
+  .auth-panel-grid {
+    background-image:
+      linear-gradient(to right, var(--auth-panel-grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--auth-panel-grid) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0) 76%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0) 76%);
+  }
+
+  /* -----------------------------------------------------------------------
+   * The surface primitive.
+   *
+   * Five layers, all of them cheap: a near-white fill that lets the page
+   * through, a 1px specular line along the top edge, a hairline rim in the
+   * opposite value, a faint shading inside the bottom edge that gives the
+   * panel thickness, and a two-part drop shadow - a tight one for contact and a
+   * wide, very faint one for separation.
+   * --------------------------------------------------------------------- */
+  .glass,
+  .glass-float {
+    position: relative;
+    background-color: var(--surface);
+    background-image: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      inset 0 1px 0 var(--glass-edge-top),
+      inset 0 -1px 0 var(--glass-edge-bottom),
+      inset 0 -16px 26px -22px var(--glass-inner-glow),
+      var(--shadow-glass);
+  }
+
+  /**
+   * The application header: one floating pane of glass that holds the search
+   * field, the account controls and the profile.
+   *
+   * It is `position: sticky` inside the page's scroll container, so what passes
+   * under it is the content itself - tables, cards, rows - and the blur is
+   * picking up real pixels that are moving, which is the whole point. A sticky
+   * element only sticks within its nearest *scroll container*, so the header
+   * has to live inside <main>, not beside it.
+   *
+   * `backdrop-filter` is set on this element only: the controls inside it are
+   * ordinary buttons over one shared surface, never glass panes of their own.
+   */
+  .glass-header {
+    position: relative;
+    background-color: var(--surface-header);
+    background-image: var(--glass-fill-header);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      inset 0 1px 0 var(--glass-edge-top),
+      inset 0 -1px 0 var(--glass-edge-bottom),
+      var(--shadow-float);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+  }
+
+  /**
+   * Glass that genuinely floats over content - menus, dialogs, the mobile dock,
+   * the alerts popover. These are few and short-lived, and they are the only
+   * surfaces where there is something behind them worth blurring.
+   */
+  .glass-float {
+    background-color: var(--surface-float);
+    box-shadow:
+      inset 0 1px 0 var(--glass-edge-top),
+      inset 0 -1px 0 var(--glass-edge-bottom),
+      inset 0 -16px 26px -22px var(--glass-inner-glow),
+      var(--shadow-float);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  }
+
+  .glass-float-strong {
+    background-color: var(--surface-float);
+    box-shadow:
+      inset 0 1px 0 var(--glass-edge-top),
+      inset 0 -1px 0 var(--glass-edge-bottom),
+      inset 0 -16px 26px -22px var(--glass-inner-glow),
+      var(--shadow-float);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  }
+
+  /**
+   * The navigation rail: a floating, rounded pane of the same glass, set in
+   * from the window edge by the gutter so the page shows past it on every side.
+   *
+   * Its fill is opaque, so there is nothing for a backdrop blur to mix down.
+   * It used to carry one anyway; that made every frame of the width animation
+   * pay for a readback that could not change a single pixel.
+   */
+  .glass-sidebar {
+    position: relative;
+    /* The rail's width animates, so its own layout should not be allowed to
+       make the rest of the page's layout depend on what is inside it. */
+    contain: layout style;
+    background-color: var(--sidebar-bg);
+    background-image: var(--sidebar-fill);
+    border: 1px solid var(--sidebar-border);
+    box-shadow:
+      inset 0 1px 0 var(--sidebar-edge-top),
+      inset 0 -1px 0 var(--glass-edge-bottom),
+      inset 0 -18px 30px -24px var(--glass-inner-glow),
+      var(--sidebar-shadow);
+  }
+
+  /**
+   * `.card` is the one panel primitive: `.glass` plus a clip, so a table or a
+   * chart inside it cannot paint over the rounded corners.
+   */
+  .card {
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+  }
+
+  .card-interactive {
+    transition:
+      transform var(--dur-normal) var(--ease-glass),
+      box-shadow var(--dur-normal) var(--ease-glass),
+      border-color var(--dur-fast) ease-out;
+  }
+  .card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+    box-shadow:
+      inset 0 1px 0 var(--glass-edge-top),
+      inset 0 -1px 0 var(--glass-edge-bottom),
+      inset 0 -16px 26px -22px var(--glass-inner-glow),
+      var(--shadow-glass-hover);
+  }
+  .card-interactive:active {
+    transform: translateY(0) scale(0.994);
+    transition-duration: var(--dur-fast);
+  }
+
+  /* A control that lifts: press feedback on every button, quick action and
+     row tile, without each of them re-declaring a transition. */
+  .pressable {
+    transition:
+      transform var(--dur-fast) var(--ease-glass),
+      background-color var(--dur-fast) ease-out,
+      border-color var(--dur-fast) ease-out,
+      box-shadow var(--dur-fast) ease-out;
+  }
+  .pressable:active:not(:disabled) {
+    transform: scale(0.975);
+  }
+
+  /* -----------------------------------------------------------------------
+   * Search results.
+   *
+   * A match is a tint of the live accent, not a status colour: the row is
+   * still "a product" or "an invoice", it is just the one the reader asked
+   * for. The indicator is painted on the first cell rather than as a border,
+   * so it cannot change the column widths or shift the row when a search
+   * starts and stops. The stronger tint is reserved for the best match.
+   * --------------------------------------------------------------------- */
+  .table-row-match {
+    background-color: var(--table-row-match);
+    animation: search-row-in var(--dur-normal) var(--ease-glass);
+  }
+
+  .table-row-match:hover {
+    background-color: var(--table-row-match-hover);
+  }
+
+  .table-row-match-primary {
+    background-color: var(--table-row-match-primary);
+  }
+
+  .table-row-match-primary:hover {
+    background-color: var(--table-row-match-primary-hover);
+  }
+
+  .table-row-match > td:first-child {
+    box-shadow: inset 2px 0 0 var(--table-row-match-indicator);
+  }
+
+  .table-row-match-primary > td:first-child {
+    box-shadow: inset 3px 0 0 var(--table-row-match-indicator);
+  }
+
+  /* The reading direction decides which edge is "first". */
+  [dir="rtl"] .table-row-match > td:first-child {
+    box-shadow: inset -2px 0 0 var(--table-row-match-indicator);
+  }
+
+  [dir="rtl"] .table-row-match-primary > td:first-child {
+    box-shadow: inset -3px 0 0 var(--table-row-match-indicator);
+  }
+
+  @keyframes search-row-in {
+    from {
+      background-color: transparent;
+    }
+  }
+
+  .search-match {
+    border-radius: 0.2em;
+    background-color: var(--search-match-bg);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    color: inherit;
+    padding-inline: 0.08em;
+    text-decoration: underline;
+    text-decoration-color: var(--search-match-underline);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.16em;
+  }
+
+  /* -----------------------------------------------------------------------
+   * Theme switching.
+   *
+   * The wash (`.theme-wash`) crossfades the page colour and is what the eye
+   * actually reads; these transitions let the frame's own fills, rims and
+   * shadows settle into the new palette instead of cutting. Only the chrome is
+   * listed. A transition on every descendant would repaint every row of every
+   * table on the switch, which is the cost the compositor-only wash exists to
+   * avoid - and it is exactly the kind of lag a shopkeeper's machine notices.
+   * --------------------------------------------------------------------- */
+  .app-main,
+  .glass,
+  .glass-float,
+  .glass-sidebar,
+  .glass-header,
+  .glass-chip {
+    transition:
+      background-color var(--dur-theme) var(--ease-glass),
+      border-color var(--dur-theme) var(--ease-glass),
+      box-shadow var(--dur-theme) var(--ease-glass);
+  }
+
+  /** A glass panel that carries a light of its own. Used sparingly: an accent
+      that has to be visible without being a coloured fill. */
+  .glass-lit {
+    box-shadow:
+      inset 0 1px 0 var(--glass-edge-top),
+      inset 0 -1px 0 var(--glass-edge-bottom),
+      inset 0 -16px 26px -22px var(--lit-glow, var(--glass-inner-glow)),
+      var(--lit-shadow, var(--shadow-glass));
+  }
+
+  /* The icon chip: a small piece of the same glass, with its own light. */
+  .glass-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background-color: var(--surface-2);
+    background-image: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.02) 60%
+    );
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      inset 0 1px 0 var(--glass-edge-top),
+      0 6px 14px -10px var(--chip-glow, rgba(0, 0, 0, 0.35));
+  }
+
+  /* The dark palette is flat: chips and brand-filled controls use their solid
+     background colour instead of the light theme's gradient. */
+  .dark .glass-chip {
+    background-image: none;
+  }
+
+  .dark button[data-variant="primary"] {
+    background-color: var(--brand);
+    background-image: none;
+  }
+  .dark button[data-variant="primary"]:hover {
+    background-color: var(--brand-hover);
+  }
+  .dark button[data-variant="primary"]:active {
+    background-color: color-mix(in srgb, var(--brand-hover) 86%, black);
+  }
+  .dark button[data-variant="destructive"] {
+    background-color: var(--danger);
+    background-image: none;
+  }
+  .dark button[role="switch"][data-switch-state="on"] {
+    background-color: var(--brand);
+    background-image: none;
+  }
+
+  /*
+   * The light each chip is lit with.
+   *
+   * `color-mix` against the token rather than a literal, so the chip follows the
+   * theme: in the light palette these are deep enough to read as a shadow under
+   * the glass, in the dark palette they brighten with the rest of the palette.
+   * Listed as literal class names because Tailwind only emits rules it can see
+   * written down.
+   */
+  .chip-brand {
+    --chip-glow: color-mix(in srgb, var(--brand) 30%, transparent);
+  }
+  .chip-violet {
+    --chip-glow: color-mix(in srgb, var(--violet) 28%, transparent);
+  }
+  .chip-cyan {
+    --chip-glow: color-mix(in srgb, var(--cyan) 26%, transparent);
+  }
+  .chip-teal {
+    --chip-glow: color-mix(in srgb, var(--teal) 26%, transparent);
+  }
+  .chip-gold {
+    --chip-glow: color-mix(in srgb, var(--gold) 30%, transparent);
+  }
+  .chip-amber {
+    --chip-glow: color-mix(in srgb, var(--warning) 26%, transparent);
+  }
+  .chip-rose {
+    --chip-glow: color-mix(in srgb, var(--danger) 26%, transparent);
+  }
+  .chip-neutral {
+    --chip-glow: color-mix(in srgb, var(--text-3) 40%, transparent);
+  }
+
+  /** Shimmer for skeletons. One moving highlight, transform only. */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.14) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer-sweep 1.6s ease-in-out infinite;
+  }
+  @keyframes shimmer-sweep {
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  /**
+   * Dialog body: 480px and 920px dialogs run tighter than page cards so a whole
+   * small form is visible without scrolling.
+   */
+  .dialog-body .grid.gap-3 {
+    gap: 12px;
+  }
+
+  .dialog-body .h-9 {
+    height: 36px;
+  }
+
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: var(--kbd-bg);
+    color: var(--text-2);
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  /*
+   * Toasts.
+   *
+   * Sonner ships its own palette and writes it onto the toaster element as
+   * custom properties, which is why a toast could sit on a dark page in a
+   * colour that was chosen for a light one. Every one of them is redirected to
+   * a token here, so a toast is themed by the same variables as everything else
+   * and flips with the page.
+   */
+  [data-sonner-toaster] {
+    --normal-bg: var(--surface-float);
+    --normal-text: var(--text);
+    --normal-border: var(--glass-border);
+    --success-bg: var(--success-soft);
+    --success-text: var(--success);
+    --success-border: color-mix(in srgb, var(--success) 34%, transparent);
+    --error-bg: var(--danger-soft);
+    --error-text: var(--danger);
+    --error-border: color-mix(in srgb, var(--danger) 34%, transparent);
+    --warning-bg: var(--warning-soft);
+    --warning-text: var(--warning);
+    --warning-border: color-mix(in srgb, var(--warning) 34%, transparent);
+    --info-bg: var(--info-soft);
+    --info-text: var(--info);
+    --info-border: color-mix(in srgb, var(--info) 32%, transparent);
+  }
+
+  [data-sonner-toast] {
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-float);
+    font-family: Inter, Cairo, system-ui, sans-serif;
+  }
+
+  .print-sheet {
+    background: #ffffff;
+    color: #0f172a;
+  }
+
+  .print-band {
+    background: #14243d !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-rule {
+    border-top: 3px solid #14243d;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-total-box {
+    border: 1px solid #14243d;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #f5f8fc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @media print {
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+
+    body {
+      /* Paper, not glass: the page depth and the translucency would print as a
+         grey wash and waste toner. */
+      background: #ffffff !important;
+      background-image: none !important;
+      color: #0f172a !important;
+    }
+
+    /*
+     * The application's own print output.
+     *
+     * Documents are printed through a separate window that holds nothing but
+     * the document, so this only matters if someone prints the application
+     * window itself: the rail, the toolbar and the floating dock are chrome,
+     * not content, and leaving them in produces a page of furniture.
+     */
+    .app-sidebar,
+    .app-topbar,
+    .no-print {
+      display: none !important;
+    }
+
+    .app-shell main {
+      margin: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      overflow: visible !important;
+    }
+
+    /* Paper is not a viewport: the app's frame must grow with the content
+       instead of clipping it at one screen height. */
+    .app-shell {
+      height: auto !important;
+    }
+
+    .glass,
+    .glass-float,
+    .glass-sidebar,
+    .glass-header,
+    .card,
+    .glass-chip {
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+
+    .print-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .print-table th {
+      background: #f1f5f9;
+      border-bottom: 2px solid #14243d;
+      padding: 6px;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    .print-table td {
+      border-bottom: 1px solid #cbd5e1;
+      padding: 5px 6px;
+      vertical-align: top;
+    }
+
+    .print-table tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    .print-table td.num,
+    .print-table th.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .print-break {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+  }
+
+  .print-only {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Theme switch
+ *
+ * The old page colour is laid over the window at low opacity and faded out.
+ * Opacity is compositor work, so the fade does not re-lay-out the page or
+ * snapshot it. The theme class itself has already changed underneath.
+ * ------------------------------------------------------------------------ */
+.theme-wash {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  background: var(--theme-wash-color, transparent);
+  opacity: 0;
+  animation: theme-wash var(--dur-theme) var(--ease-glass) forwards;
+}
+
+@keyframes theme-wash {
+  from {
+    opacity: 0.18;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-wash {
+    display: none;
+  }
+}
